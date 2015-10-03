@@ -1,0 +1,4 @@
+<layout id="AccountLayout">
+	<label id="name_label" x="center" y="45" text="Gmail" color="Gfx.COLOR_WHITE" justification="Gfx.TEXT_JUSTIFY_CENTER" font="Gfx.FONT_MEDIUM"/>
+	<label id="code_label" x="center" y="center" text="000000" color="Gfx.COLOR_WHITE" justification="Gfx.TEXT_JUSTIFY_CENTER" font="Gfx.FONT_LARGE"/>
+</layout>
