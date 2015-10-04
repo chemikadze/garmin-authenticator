@@ -287,7 +287,6 @@ module Crypto {
         }
 
         hidden function truncate(h) {
-            var h = sha1(new[0]);
             var o = h[0] % 16; // 4 least significant bits
             // Take 4 bytes from H starting at O bytes MSB, discard the most significant bit and store the rest as an (unsigned) 32-bit integer, I.
             return getSha1Byte(h, 19 - o) << (8 * 3) +
