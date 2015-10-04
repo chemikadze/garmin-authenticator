@@ -105,36 +105,6 @@ module Crypto {
         return ((x << n) & mask32bit) | (x >> (32 - n));
     }
 
-    function sha1f(t, B, C, D) {
-        if ((0 <= t) and (t <= 19)) {
-            return (B & C) | ((~B) & D);
-        } else if ((20 <= t) and (t <= 39)) {
-            return B ^ C ^ D;
-        } else if ((40 <= t) and (t <= 59)) {
-            return (B & C) | (B & D) | (C & D);
-        } else if ((60 <= t) and (t <= 79)) {
-            return B ^ C ^ D;
-        } else {
-            throw new Toybox.Lang.Exception();
-            return -1;
-        }
-    }
-
-    function sha1k(t) {
-        if ((0 <= t) and (t <= 19)) {
-            return 0x5A827999l;
-        } else if ((20 <= t) and (t <= 39)) {
-            return 0x6ED9EBA1l;
-        } else if ((40 <= t) and (t <= 59)) {
-            return 0x8F1BBCDCl;
-        } else if ((60 <= t) and (t <= 79)) {
-            return 0xCA62C1D6l;
-        } else {
-            throw new Toybox.Lang.Exception();
-            return -1;
-        }
-    }
-
     function padOne(wordBlock, position) {
         var wordId = position / 4;
         var offset = 3 - position % 4;
@@ -193,8 +163,28 @@ module Crypto {
             // c)
             A = H0; B = H1; C = H2; D = H3; E = H4;
             // d)
-            for (var t = 0; t <= 79; ++t) {
-                TEMP = (clshift(A, 5) + sha1f(t, B, C, D) + E + W[t] + sha1k(t)) & mask32bit;
+            for (var t = 0; t <= 19; ++t) {
+                var F = (B & C) | ((~B) & D);
+                var K = 0x5A827999l;
+                TEMP = (clshift(A, 5) + F + E + W[t] + K) & mask32bit;
+                E = D; D = C; C = clshift(B, 30); B = A; A = TEMP;
+            }
+            for (var t = 20; t <= 39; ++t) {
+                var F = B ^ C ^ D;
+                var K = 0x6ED9EBA1l;
+                TEMP = (clshift(A, 5) + F + E + W[t] + K) & mask32bit;
+                E = D; D = C; C = clshift(B, 30); B = A; A = TEMP;
+            }
+            for (var t = 40; t <= 59; ++t) {
+                var F = (B & C) | (B & D) | (C & D);
+                var K = 0x8F1BBCDCl;
+                TEMP = (clshift(A, 5) + F + E + W[t] + K) & mask32bit;
+                E = D; D = C; C = clshift(B, 30); B = A; A = TEMP;
+            }
+            for (var t = 60; t <= 79; ++t) {
+                var F = B ^ C ^ D;
+                var K = 0xCA62C1D6l;
+                TEMP = (clshift(A, 5) + F + E + W[t] + K) & mask32bit;
                 E = D; D = C; C = clshift(B, 30); B = A; A = TEMP;
             }
             // e)
