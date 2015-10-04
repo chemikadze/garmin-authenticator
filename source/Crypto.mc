@@ -95,7 +95,6 @@ module Crypto {
 
     function sha1(data) {
         return sha1method1(data);
-        // return [1l, 0l, 0l, 0l, 42l];
     }
 
     function getSha1Byte(data, index) {
@@ -209,6 +208,68 @@ module Crypto {
     }
 
     //------------------------------------------------------------------------
+    // HMAC-SHA1
+    // see rfc2104 for details
+    //------------------------------------------------------------------------
+
+    function padArray(data, expectedLength, elem) {
+        var output = new[data.size() + expectedLength];
+        for (var i = 0; i < data.size(); ++i) {
+            output[i] = data[i];
+        }
+        for (var i = 0; i < expectedLength; ++i) {
+            output[data.size() + i] = elem;
+        }
+        return output;
+    }
+
+    function xorBytes(data, mask) {
+        var newData = new[data.size()];
+        for (var i = 0; i < data.size(); ++i) {
+            newData[i] = data[i] ^ mask;
+        }
+        return newData;
+    }
+
+    function concatArrays(first, second) {
+        var output = new[first.size() + second.size()];
+        for (var i = 0; i < first.size(); ++i) {
+            output[i] = first[i];
+        }
+        for (var i = 0; i < second.size(); ++i) {
+            output[first.size() + i] = second[i];
+        }
+        return output;
+    }
+
+    function unpackArray(input, elemSize) {
+        var output = new[input.size() * elemSize];
+        for (var i = 0; i < input.size(); ++i) {
+            var item = input[i];
+            for (var j = 1; j <= elemSize; ++j) {
+                output[i * elemSize + (elemSize - j)] = (item % 256).toNumber();
+                item = item >> 8;
+            }
+        }
+        return output;
+    }
+
+    hidden var ipad = 0x36;
+    hidden var opad = 0x5c;
+
+    function sha1hmac(key, data) {
+        // H(K XOR opad, H(K XOR ipad, text))
+        var paddedKey = padArray(key, 64, 0);
+        return sha1(concatArrays(
+            xorBytes(paddedKey, opad),
+            unpackArray(sha1(concatArrays(
+                xorBytes(paddedKey, ipad),
+                data
+            )), 4)
+        ));
+    }
+
+    //------------------------------------------------------------------------
     // TOTP implementation
     // see rfc6238 for details
     //------------------------------------------------------------------------
@@ -230,14 +291,23 @@ module Crypto {
             // Compute the HMAC hash H with C as the message and K as the key
             // (the HMAC algorithm is defined in the previous section, but also most cryptographical libraries support it).
             // K should be passed as it is, C should be passed as a raw 64-bit unsigned integer.
+            var h = sha1hmac(decodedKey, [0, 0, 0, 0, c >> 24 % 256, c >> 16 % 256, c >> 8 % 256, c % 256]);
+            var tokenNumber = truncate(h);
+            return formatToken(tokenNumber);
+        }
+
+        hidden function truncate(h) {
             var h = sha1(new[0]);
             var o = h[0] % 16; // 4 least significant bits
             // Take 4 bytes from H starting at O bytes MSB, discard the most significant bit and store the rest as an (unsigned) 32-bit integer, I.
-            var tokenNumber =
-                getSha1Byte(h, 19 - o) << (8 * 3) +
+            return getSha1Byte(h, 19 - o) << (8 * 3) +
                 getSha1Byte(h, 19 - o - 1) << (8 * 2) +
                 getSha1Byte(h, 19 - o - 2) << (8 * 1) +
                 getSha1Byte(h, 19 - o - 3);
+
+        }
+
+        hidden function formatToken(tokenNumber) {
             // The token is the lowest N digits of I in base 10. If the result has fewer digits than N, pad it with zeroes from the left.
             var format = "%0" + tokenLength + "i";
             var token = tokenNumber.format(format);
