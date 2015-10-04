@@ -127,7 +127,10 @@ module Crypto {
         var blockSizeW = 16;
         var blockSizeB = blockSizeW * 4;
         var lastBlockDataBytes = data.size() % blockSizeB;
-        var needAdditionalBlock = ((55 < lastBlockDataBytes) and (lastBlockDataBytes < 64)) or (lastBlockDataBytes == 0);
+        if ((lastBlockDataBytes == 0) && data.size() != 0) {
+            lastBlockDataBytes = 64;
+        }
+        var needAdditionalBlock = ((55 < lastBlockDataBytes) and (lastBlockDataBytes <= 64));
         var blockCount = needAdditionalBlock ? divCeil(data.size(), blockSizeB) + 1 : divCeil(data.size(), blockSizeB);
         var messageLength = data.size() * 8l;
         // for each 16-word (64-byte, 512-bit) block
@@ -147,11 +150,13 @@ module Crypto {
                 W[j / 4] = W[j / 4] + data[blockOffset + j].toLong() << (8 * (3 - j % 4));
             }
             // handle penult and last block padding
-            if ((i == blockCount - 2) and needAdditionalBlock) {
+            if ((i == blockCount - 2) and needAdditionalBlock and (lastBlockDataBytes != 64)) {
                 padOne(W, lastBlockDataBytes);
             } else if (i == blockCount - 1) {
                 if (!needAdditionalBlock) {
                     padOne(W, lastBlockDataBytes);
+                } else if (lastBlockDataBytes == 64) {
+                    padOne(W, 0);
                 }
                 W[14] = messageLength >> 32;
                 W[15] = messageLength % (1l << 32);
@@ -203,12 +208,12 @@ module Crypto {
     //------------------------------------------------------------------------
 
     function padArray(data, expectedLength, elem) {
-        var output = new[data.size() + expectedLength];
+        var output = new[expectedLength];
         for (var i = 0; i < data.size(); ++i) {
             output[i] = data[i];
         }
-        for (var i = 0; i < expectedLength; ++i) {
-            output[data.size() + i] = elem;
+        for (var i = data.size(); i < expectedLength; ++i) {
+            output[i] = elem;
         }
         return output;
     }
@@ -232,12 +237,12 @@ module Crypto {
         return output;
     }
 
-    function unpackArray(input, elemSize) {
+    function unpackSha1Hash(input, elemSize) {
         var output = new[input.size() * elemSize];
         for (var i = 0; i < input.size(); ++i) {
             var item = input[i];
-            for (var j = 1; j <= elemSize; ++j) {
-                output[i * elemSize + (elemSize - j)] = (item % 256).toNumber();
+            for (var j = 0; j < elemSize; ++j) {
+                output[output.size() - 1 - i * elemSize - j] = (item % 256).toNumber();
                 item = item >> 8;
             }
         }
@@ -252,7 +257,7 @@ module Crypto {
         var paddedKey = padArray(key, 64, 0);
         return sha1(concatArrays(
             xorBytes(paddedKey, opad),
-            unpackArray(sha1(concatArrays(
+            unpackSha1Hash(sha1(concatArrays(
                 xorBytes(paddedKey, ipad),
                 data
             )), 4)
@@ -305,10 +310,10 @@ module Crypto {
         hidden function truncate(h) {
             var o = h[0] % 16; // 4 least significant bits
             // Take 4 bytes from H starting at O bytes MSB, discard the most significant bit and store the rest as an (unsigned) 32-bit integer, I.
-            return getSha1Byte(h, 19 - o) << (8 * 3) +
+            return (getSha1Byte(h, 19 - o) << (8 * 3) +
                 getSha1Byte(h, 19 - o - 1) << (8 * 2) +
                 getSha1Byte(h, 19 - o - 2) << (8 * 1) +
-                getSha1Byte(h, 19 - o - 3);
+                getSha1Byte(h, 19 - o - 3)) & 0x7FFFFFFF;
 
         }
 
