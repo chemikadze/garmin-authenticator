@@ -1,4 +1,5 @@
 using Toybox.Application as App;
+using Toybox.Graphics;
 using Toybox.WatchUi as Ui;
 using Toybox.Time;
 
@@ -31,16 +32,23 @@ class EmptyAuthenticatorDelegate extends Ui.BehaviorDelegate {
 class AccountView extends Ui.View {
 
     var account;
+    var timer;
 
     function initialize(newAccount) {
         account = newAccount;
+        timer = new Toybox.Timer.Timer();
     }
 
     function onLayout(dc) {
         setLayout(Rez.Layouts.AccountLayout(dc));
     }
 
+    hidden function requestUpdate() {
+        Ui.requestUpdate();
+    }
+
     function onShow() {
+        timer.start(method(:requestUpdate), 1000, true);
     }
 
     function onUpdate(dc) {
@@ -49,9 +57,23 @@ class AccountView extends Ui.View {
         var codeLabel = findDrawableById("code_label");
         codeLabel.setText(account.generateToken());
         View.onUpdate(dc);
+        var timeLeft = account.timeLeftPercent();
+        drawBar(dc, timeLeft);
+    }
+
+    hidden function drawBar(dc, percent) {
+        var xPadding = 70;
+        var barY = 135;
+        var barWidth = dc.getWidth() - xPadding * 2;
+        dc.setPenWidth(2);
+        dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_BLACK);
+        dc.drawLine(xPadding, barY, xPadding + barWidth, barY);
+        dc.setColor(Graphics.COLOR_BLUE, Graphics.COLOR_BLACK);
+        dc.drawLine(xPadding, barY, xPadding + barWidth * percent / 100, barY);
     }
 
     function onHide() {
+        timer.stop();
     }
 
 }
@@ -107,6 +129,10 @@ class AccountInfo {
 
     function generateToken() {
         return totp.generateToken();
+    }
+
+    function timeLeftPercent() {
+        return 100.0 * totp.timeToNextUpdate() / totp.updateInterval();
     }
 
 }

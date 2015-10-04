@@ -270,6 +270,8 @@ module Crypto {
             epoch = 0, // T0
             interval = 30, // TI
             tokenLength = 6; // N
+        hidden var cachedToken = null;
+        hidden var cachedCounter = null;
 
         function initialize(key) {
             decodedKey = base32decode(key);
@@ -278,12 +280,26 @@ module Crypto {
 
         function generateToken() {
             var c = (Time.now().value() - epoch) / interval;
+            if (cachedCounter == c) {
+                return cachedToken;
+            }
             // Compute the HMAC hash H with C as the message and K as the key
             // (the HMAC algorithm is defined in the previous section, but also most cryptographical libraries support it).
             // K should be passed as it is, C should be passed as a raw 64-bit unsigned integer.
             var h = sha1hmac(decodedKey, [0, 0, 0, 0, c >> 24 % 256, c >> 16 % 256, c >> 8 % 256, c % 256]);
             var tokenNumber = truncate(h);
-            return formatToken(tokenNumber);
+            var token = formatToken(tokenNumber);
+            cachedToken = token;
+            cachedCounter = c;
+            return token;
+        }
+
+        function updateInterval() {
+            return interval;
+        }
+
+        function timeToNextUpdate() {
+            return interval - (Time.now().value() - epoch) % interval;
         }
 
         hidden function truncate(h) {
