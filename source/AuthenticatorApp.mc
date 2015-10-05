@@ -24,7 +24,7 @@ class EmptyAuthenticatorView extends Ui.View {
 class EmptyAuthenticatorDelegate extends Ui.BehaviorDelegate {
     function onMenu() {
         var menu = new Rez.Menus.EmptyMenu();
-        Ui.pushView(menu, new AccountsMenuDelegate(), Ui.SLIDE_RIGHT);
+        Ui.pushView(menu, new AccountsMenuDelegate(null), Ui.SLIDE_RIGHT);
         return true;
     }
 }
@@ -79,13 +79,15 @@ class AccountView extends Ui.View {
 }
 
 class AccountDelegate extends Ui.BehaviorDelegate {
-    function initialize(account) {
-        // TODO
+    hidden var account;
+
+    function initialize(newAccount) {
+        account = newAccount;
     }
 
     function onMenu() {
         var menu = new Rez.Menus.AccountsMenu();
-        Ui.pushView(menu, new AccountsMenuDelegate(), Ui.SLIDE_RIGHT);
+        Ui.pushView(menu, new AccountsMenuDelegate(account), Ui.SLIDE_RIGHT);
         return true;
     }
 
@@ -99,10 +101,30 @@ class AccountDelegate extends Ui.BehaviorDelegate {
 }
 
 class AccountsMenuDelegate extends Ui.MenuInputDelegate {
+    hidden var account;
+
+    function initialize(newAccount) {
+        account = newAccount;
+    }
+
     function onMenuItem(item) {
         if (item == :add_account) {
-            Ui.pushView(new Ui.TextPicker("Account"), new AccountCreateDelegate(), Ui.SLIDE_LEFT);
+            Ui.pushView(new Ui.TextPicker("Name"), new AccountCreateDelegate(), Ui.SLIDE_LEFT);
         } else if (item == :delete_account) {
+            Ui.pushView(new Ui.Confirmation("Delete account?"), new AccountDeletionConfirmationDelegate(account), Ui.SLIDE_IMMEDIATE);
+        }
+    }
+}
+
+class AccountDeletionConfirmationDelegate {
+    hidden var account;
+
+    function initialize(newAccount) {
+        account = newAccount;
+    }
+
+    function onResponse(confirmation) {
+        if (confirmation == Ui.CONFIRM_YES) {
             App.getApp().deleteAccount(App.getApp().getAccount().name);
             var account = App.getApp().getAccount();
             if (account != null) {
@@ -110,13 +132,16 @@ class AccountsMenuDelegate extends Ui.MenuInputDelegate {
             } else {
                 Ui.switchToView(new EmptyAuthenticatorView(), new EmptyAuthenticatorDelegate(), Ui.SLIDE_IMMEDIATE);
             }
+        } else {
+            Ui.switchToView(new AccountView(account), new AccountDelegate(account), Ui.SLIDE_IMMEDIATE);
         }
+
     }
 }
 
 class AccountCreateDelegate extends Ui.TextPickerDelegate {
     function onTextEntered(text) {
-        Ui.pushView(new Ui.TextPicker(""), new AccountSetCodeDelegate(text), Ui.SLIDE_LEFT);
+        Ui.pushView(new Ui.TextPicker("Code"), new AccountSetCodeDelegate(text), Ui.SLIDE_LEFT);
     }
 }
 
