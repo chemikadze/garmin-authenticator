@@ -249,14 +249,10 @@ class AuthenticatorApp extends App.AppBase {
         accounts = newAccounts;
         setProperty("accounts", newAccounts);
         saveProperties();
-        Toybox.System.println(accounts);
-        Toybox.System.println(currentAccount);
     }
 
     hidden var currentAccount = 0;
     function getNextAccount() {
-        Toybox.System.println(accounts);
-        Toybox.System.println(currentAccount);
         currentAccount = (currentAccount + 1) % accounts.size();
         return getAccount(currentAccount);
     }
