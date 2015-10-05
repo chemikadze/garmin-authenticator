@@ -62,8 +62,8 @@ class AccountView extends Ui.View {
     }
 
     hidden function drawBar(dc, percent) {
-        var xPadding = 70;
-        var barY = 135;
+        var xPadding = 60;
+        var barY = 157;
         var barWidth = dc.getWidth() - xPadding * 2;
         dc.setPenWidth(3);
         dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_BLACK);
