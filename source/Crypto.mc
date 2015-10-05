@@ -8,6 +8,9 @@ module Crypto {
     //------------------------------------------------------------------------
 
     function base32decode(s) {
+        if (s.length() == 0) {
+            return new[0];
+        }
         var blockCount = s.length() / 8;
         if (s.length() % 8 != 0) {
             blockCount = blockCount + 1;

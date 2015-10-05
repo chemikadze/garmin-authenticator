@@ -1,3 +1,4 @@
 <menu id="AccountsMenu">
-    <menu-item id="add_account">Edit account</menu-item>
+    <menu-item id="add_account">Add account</menu-item>    
+    <menu-item id="delete_account">Delete account</menu-item>
 </menu>

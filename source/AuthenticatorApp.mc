@@ -23,7 +23,7 @@ class EmptyAuthenticatorView extends Ui.View {
 
 class EmptyAuthenticatorDelegate extends Ui.BehaviorDelegate {
     function onMenu() {
-        var menu = new Rez.Menus.AccountsMenu();
+        var menu = new Rez.Menus.EmptyMenu();
         Ui.pushView(menu, new AccountsMenuDelegate(), Ui.SLIDE_RIGHT);
         return true;
     }
@@ -65,7 +65,7 @@ class AccountView extends Ui.View {
         var xPadding = 70;
         var barY = 135;
         var barWidth = dc.getWidth() - xPadding * 2;
-        dc.setPenWidth(2);
+        dc.setPenWidth(3);
         dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_BLACK);
         dc.drawLine(xPadding, barY, xPadding + barWidth, barY);
         dc.setColor(Graphics.COLOR_BLUE, Graphics.COLOR_BLACK);
@@ -88,19 +88,35 @@ class AccountDelegate extends Ui.BehaviorDelegate {
         Ui.pushView(menu, new AccountsMenuDelegate(), Ui.SLIDE_RIGHT);
         return true;
     }
+
+    function onKey(key) {
+        if ((key.getKey() == Ui.KEY_ENTER) and (key.getType() == Ui.PRESS_TYPE_ACTION)) {
+            var account = App.getApp().getNextAccount();
+            Ui.switchToView(new AccountView(account), new AccountDelegate(account), Ui.SLIDE_IMMEDIATE);
+        }
+    }
+
 }
 
 class AccountsMenuDelegate extends Ui.MenuInputDelegate {
     function onMenuItem(item) {
         if (item == :add_account) {
             Ui.pushView(new Ui.TextPicker("Account"), new AccountCreateDelegate(), Ui.SLIDE_LEFT);
+        } else if (item == :delete_account) {
+            App.getApp().deleteAccount(App.getApp().getAccount().name);
+            var account = App.getApp().getAccount();
+            if (account != null) {
+                Ui.switchToView(new AccountView(account), new AccountDelegate(account), Ui.SLIDE_IMMEDIATE);
+            } else {
+                Ui.switchToView(new EmptyAuthenticatorView(), new EmptyAuthenticatorDelegate(), Ui.SLIDE_IMMEDIATE);
+            }
         }
     }
 }
 
 class AccountCreateDelegate extends Ui.TextPickerDelegate {
     function onTextEntered(text) {
-        Ui.pushView(new Ui.TextPicker("sxt33fkcmwsw4jds"), new AccountSetCodeDelegate(text), Ui.SLIDE_LEFT);
+        Ui.pushView(new Ui.TextPicker(""), new AccountSetCodeDelegate(text), Ui.SLIDE_LEFT);
     }
 }
 
@@ -113,7 +129,7 @@ class AccountSetCodeDelegate extends Ui.TextPickerDelegate {
         Ui.popView(Ui.SLIDE_IMMEDIATE);
         var account = new AccountInfo(name, text);
         App.getApp().saveAccount(account);
-        Ui.switchToView(new AccountView(account), new AccountDelegate(account), Ui.SLIDE_LEFT);
+        Ui.switchToView(new AccountView(account), new AccountDelegate(account), Ui.SLIDE_IMMEDIATE);
     }
 }
 
@@ -157,16 +173,79 @@ class AuthenticatorApp extends App.AppBase {
         if (accounts.size() == 0) {
             return [ new EmptyAuthenticatorView(), new EmptyAuthenticatorDelegate() ];
         } else {
-            var accountData = accounts[0];
-            var account = new AccountInfo(accountData["name"], accountData["secrete"]);
+            var account = getAccount(0);
             return [ new AccountView(account), new AccountDelegate(account) ];
         }
     }
 
     function saveAccount(account) {
-        accounts = [ {"name" => account.name, "secrete" => account.key} ];
-        setProperty("accounts", accounts);
+        var id = findByName(accounts, account.name);
+        var repr = {"name" => account.name, "secrete" => account.key};
+        if (id == -1) {
+            accounts = Crypto.concatArrays(accounts, [ repr ]);
+            currentAccount = accounts.size() - 1;
+        } else {
+            accounts[i] = repr;
+        }
+        updateAccounts(accounts);
+    }
+
+    function findByName(accounts, name) {
+        for (var i = 0; i < accounts.size(); ++i) {
+            if (accounts[i]["name"] == name) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    function deleteAccount(accountName) {
+        var id = findByName(accounts, accountName);
+        if (id != -1) {
+            updateAccounts(removeById(accounts, id));
+        }
+        if (currentAccount == accounts.size()) {
+            --currentAccount;
+        }
+    }
+
+    function removeById(array, id) {
+        var output = new[array.size() - 1];
+        for (var i = 0; i < id; ++i) {
+            output[i] = array[i];
+        }
+        for (var i = id + 1; i < array.size(); ++i) {
+            output[i - 1] = array[i];
+        }
+        return output;
+    }
+
+    function updateAccounts(newAccounts) {
+        accounts = newAccounts;
+        setProperty("accounts", newAccounts);
         saveProperties();
+        Toybox.System.println(accounts);
+        Toybox.System.println(currentAccount);
+    }
+
+    hidden var currentAccount = 0;
+    function getNextAccount() {
+        Toybox.System.println(accounts);
+        Toybox.System.println(currentAccount);
+        currentAccount = (currentAccount + 1) % accounts.size();
+        return getAccount(currentAccount);
+    }
+
+    function getAccount(id) {
+        if (id == null) {
+            id = currentAccount;
+        }
+        if (accounts.size() == 0) {
+            return null;
+        }
+        var accountData = accounts[id];
+        var account = new AccountInfo(accountData["name"], accountData["secrete"]);
+        return account;
     }
 
     hidden function orElse(a, b) {
