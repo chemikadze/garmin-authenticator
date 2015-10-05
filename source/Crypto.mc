@@ -135,6 +135,9 @@ module Crypto {
         }
         var needAdditionalBlock = ((55 < lastBlockDataBytes) and (lastBlockDataBytes <= 64));
         var blockCount = needAdditionalBlock ? divCeil(data.size(), blockSizeB) + 1 : divCeil(data.size(), blockSizeB);
+        var unfinishedBlock = blockCount - (needAdditionalBlock ? 2 : 1);
+        var lastBlock = blockCount - 1;
+        var penultBlock = blockCount - 2;
         var messageLength = data.size() * 8l;
         // for each 16-word (64-byte, 512-bit) block
         for (var i = 0; i < blockCount; ++i) {
@@ -144,18 +147,18 @@ module Crypto {
             }
             var blockOffset = blockSizeB * i;
             var blockLimit = blockSizeB;
-            if (i == blockCount - (needAdditionalBlock ? 2 : 1)) {
+            if (i == unfinishedBlock) {
                 blockLimit = lastBlockDataBytes;
-            } else if (needAdditionalBlock and (i == blockCount - 1)) {
+            } else if (needAdditionalBlock and (i == lastBlock)) {
                 blockLimit = 0;
             }
             for (var j = 0; j < blockLimit; ++j) {
                 W[j / 4] = W[j / 4] + data[blockOffset + j].toLong() << (8 * (3 - j % 4));
             }
             // handle penult and last block padding
-            if ((i == blockCount - 2) and needAdditionalBlock and (lastBlockDataBytes != 64)) {
+            if (needAdditionalBlock and (i == penultBlock) and (lastBlockDataBytes != 64)) {
                 padOne(W, lastBlockDataBytes);
-            } else if (i == blockCount - 1) {
+            } else if (i == lastBlock) {
                 if (!needAdditionalBlock) {
                     padOne(W, lastBlockDataBytes);
                 } else if (lastBlockDataBytes == 64) {
@@ -166,34 +169,35 @@ module Crypto {
             }
             // b)
             for (var t = 16; t <= 79; ++t) {
-                W[t] = clshift(W[t-3] ^ W[t-8] ^ W[t-14] ^ W[t-16], 1);
+                var x = W[t-3] ^ W[t-8] ^ W[t-14] ^ W[t-16];
+                W[t] = ((x << 1) & mask32bit) | (x >> 31);
             }
             // c)
             A = H0; B = H1; C = H2; D = H3; E = H4;
             // d)
+            var K = 0x5A827999l;
             for (var t = 0; t <= 19; ++t) {
                 var F = (B & C) | ((~B) & D);
-                var K = 0x5A827999l;
-                TEMP = (clshift(A, 5) + F + E + W[t] + K) & mask32bit;
-                E = D; D = C; C = clshift(B, 30); B = A; A = TEMP;
+                TEMP = (((A << 5) & mask32bit) | (A >> 27) + F + E + W[t] + K) & mask32bit;
+                E = D; D = C; C = ((B << 30) & mask32bit) | (B >> 2); B = A; A = TEMP;
             }
+            K = 0x6ED9EBA1l;
             for (var t = 20; t <= 39; ++t) {
                 var F = B ^ C ^ D;
-                var K = 0x6ED9EBA1l;
-                TEMP = (clshift(A, 5) + F + E + W[t] + K) & mask32bit;
-                E = D; D = C; C = clshift(B, 30); B = A; A = TEMP;
+                TEMP = (((A << 5) & mask32bit) | (A >> 27) + F + E + W[t] + K) & mask32bit;
+                E = D; D = C; C = ((B << 30) & mask32bit) | (B >> 2); B = A; A = TEMP;
             }
+            K = 0x8F1BBCDCl;
             for (var t = 40; t <= 59; ++t) {
                 var F = (B & C) | (B & D) | (C & D);
-                var K = 0x8F1BBCDCl;
-                TEMP = (clshift(A, 5) + F + E + W[t] + K) & mask32bit;
-                E = D; D = C; C = clshift(B, 30); B = A; A = TEMP;
+                TEMP = (((A << 5) & mask32bit) | (A >> 27) + F + E + W[t] + K) & mask32bit;
+                E = D; D = C; C = ((B << 30) & mask32bit) | (B >> 2); B = A; A = TEMP;
             }
+            K = 0xCA62C1D6l;
             for (var t = 60; t <= 79; ++t) {
                 var F = B ^ C ^ D;
-                var K = 0xCA62C1D6l;
-                TEMP = (clshift(A, 5) + F + E + W[t] + K) & mask32bit;
-                E = D; D = C; C = clshift(B, 30); B = A; A = TEMP;
+                TEMP = (((A << 5) & mask32bit) | (A >> 27) + F + E + W[t] + K) & mask32bit;
+                E = D; D = C; C = ((B << 30) & mask32bit) | (B >> 2); B = A; A = TEMP;
             }
             // e)
             H0 = (H0 + A) & mask32bit;
