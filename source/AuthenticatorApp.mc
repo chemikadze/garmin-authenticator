@@ -53,17 +53,21 @@ class AccountView extends Ui.View {
 
     function onUpdate(dc) {
         var nameLabel = findDrawableById("name_label");
-        nameLabel.setText(account.name);
         var codeLabel = findDrawableById("code_label");
-        codeLabel.setText(account.generateToken());
-        View.onUpdate(dc);
+        var token = account.generateToken();
+        codeLabel.setText(token);
+        var nameLabelDimensions = dc.getTextDimensions(account.name, Graphics.FONT_MEDIUM);
+        var codeLabelDimensions = dc.getTextDimensions(token, Graphics.FONT_NUMBER_HOT);
+        nameLabel.setText(account.name);
+        nameLabel.setLocation(nameLabel.locX, codeLabel.locY - nameLabelDimensions[1]);
         var timeLeft = account.timeLeftPercent();
-        drawBar(dc, timeLeft);
+        View.onUpdate(dc);
+        var barY = codeLabel.locY + codeLabelDimensions[1] + nameLabelDimensions[1] / 2;
+        var xPadding = (dc.getWidth() - codeLabelDimensions[0]) / 2 + 15;
+        drawBar(dc, timeLeft, xPadding, barY);
     }
 
-    hidden function drawBar(dc, percent) {
-        var xPadding = 60;
-        var barY = 157;
+    hidden function drawBar(dc, percent, xPadding, barY) {
         var barWidth = dc.getWidth() - xPadding * 2;
         dc.setPenWidth(3);
         dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_BLACK);
