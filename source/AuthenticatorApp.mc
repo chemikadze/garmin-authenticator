@@ -120,7 +120,7 @@ class AccountsMenuDelegate extends Ui.MenuInputDelegate {
     }
 }
 
-class AccountDeletionConfirmationDelegate {
+class AccountDeletionConfirmationDelegate extends Ui.ConfirmationDelegate {
     hidden var account;
 
     function initialize(newAccount) {
@@ -145,20 +145,57 @@ class AccountDeletionConfirmationDelegate {
 
 class AccountCreateDelegate extends Ui.TextPickerDelegate {
     function onTextEntered(text) {
-        Ui.pushView(new Ui.TextPicker("Code"), new AccountSetCodeDelegate(text), Ui.SLIDE_LEFT);
+        Ui.pushView(new CodeDisclaimerView(), new CodeDisclaimerDelegate(text), Ui.SLIDE_LEFT);
+    }
+}
+
+class CodeDisclaimerView extends Ui.View {
+
+    function onLayout(dc) {
+        setLayout(Rez.Layouts.CodeDisclaimerLayout(dc));
+    }
+
+    function onShow() {
+    }
+
+    function onUpdate(dc) {
+        View.onUpdate(dc);
+    }
+
+    function onHide() {
+    }
+
+}
+
+class CodeDisclaimerDelegate extends Ui.BehaviorDelegate {
+    var name;
+
+    function initialize(newName) {
+        name = newName;
+    }
+
+    function onKey(key) {
+        if ((key.getKey() == Ui.KEY_ENTER) and (key.getType() == Ui.PRESS_TYPE_ACTION)) {
+            Ui.pushView(new Ui.TextPicker("Code"), new AccountSetCodeDelegate(name, ""), Ui.SLIDE_LEFT);
+        }
     }
 }
 
 class AccountSetCodeDelegate extends Ui.TextPickerDelegate {
-    var name;
-    function initialize(newName) {
+    var name, code;
+    function initialize(newName, codeAcc) {
         name = newName;
+        code = codeAcc;
     }
     function onTextEntered(text) {
         Ui.popView(Ui.SLIDE_IMMEDIATE);
-        var account = new AccountInfo(name, text);
-        App.getApp().saveAccount(account);
-        Ui.switchToView(new AccountView(account), new AccountDelegate(account), Ui.SLIDE_IMMEDIATE);
+        if (text.length() == 31) { // ask the rest
+            Ui.pushView(new Ui.TextPicker(""), new AccountSetCodeDelegate(name, text), Ui.SLIDE_LEFT);
+        } else {
+            var account = new AccountInfo(name, code + text);
+            App.getApp().saveAccount(account);
+            Ui.switchToView(new AccountView(account), new AccountDelegate(account), Ui.SLIDE_IMMEDIATE);
+        }
     }
 }
 
