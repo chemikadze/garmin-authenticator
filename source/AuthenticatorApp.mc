@@ -2,6 +2,7 @@ using Toybox.Application as App;
 using Toybox.Graphics;
 using Toybox.WatchUi as Ui;
 using Toybox.Time;
+using Toybox.Communications;
 
 class EmptyAuthenticatorView extends Ui.View {
 
@@ -115,7 +116,7 @@ class AccountsMenuDelegate extends Ui.MenuInputDelegate {
         if (item == :add_account) {
             Ui.pushView(new Ui.TextPicker("Name"), new AccountCreateDelegate(), Ui.SLIDE_LEFT);
         } else if (item == :delete_account) {
-            Ui.pushView(new Ui.Confirmation("Delete account?"), new AccountDeletionConfirmationDelegate(account), Ui.SLIDE_IMMEDIATE);
+            Ui.pushView(new Ui.Confirmation("Delete " + account.name + "?"), new AccountDeletionConfirmationDelegate(account), Ui.SLIDE_IMMEDIATE);
         }
     }
 }
@@ -137,6 +138,25 @@ class AccountDeletionConfirmationDelegate extends Ui.ConfirmationDelegate {
                 Ui.switchToView(new EmptyAuthenticatorView(), new EmptyAuthenticatorDelegate(), Ui.SLIDE_IMMEDIATE);
             }
         } else {
+            Ui.switchToView(new AccountView(account), new AccountDelegate(account), Ui.SLIDE_IMMEDIATE);
+        }
+
+    }
+}
+
+class AccountAddConfirmationDelegate extends Ui.ConfirmationDelegate {
+    hidden var account;
+
+    function initialize(newAccount) {
+        account = newAccount;
+    }
+
+    function onResponse(confirmation) {
+        if (confirmation == Ui.CONFIRM_YES) {
+            App.getApp().saveAccount(account);
+            Ui.switchToView(new AccountView(account), new AccountDelegate(account), Ui.SLIDE_IMMEDIATE);
+        } else {
+            var account = App.getApp().getAccount();
             Ui.switchToView(new AccountView(account), new AccountDelegate(account), Ui.SLIDE_IMMEDIATE);
         }
 
@@ -226,6 +246,18 @@ class AuthenticatorApp extends App.AppBase {
     function onStart() {
     }
 
+    function mailboxListener(iterator) {
+        var msg = iterator.next();
+        while (msg != null) {
+            if (msg instanceof Toybox.Lang.Dictionary && msg.hasKey("name") && msg.hasKey("code")) {
+                var account = new AccountInfo(msg.get("name"), msg.get("code"));
+                Ui.pushView(new Ui.Confirmation("Add " + account.name + "?"), new AccountAddConfirmationDelegate(account), Ui.SLIDE_IMMEDIATE);
+            }
+            msg = iterator.next();
+        }
+        Communications.emptyMailbox();
+    }
+
     //! onStop() is called when your application is exiting
     function onStop() {
     }
@@ -236,6 +268,7 @@ class AuthenticatorApp extends App.AppBase {
     function getInitialView() {
         loadProperties();
         accounts = orElse(getProperty("accounts"), []); // TODO multi-account
+        Communications.setMailboxListener(method(:mailboxListener));
         if (accounts.size() == 0) {
             return [ new EmptyAuthenticatorView(), new EmptyAuthenticatorDelegate() ];
         } else {

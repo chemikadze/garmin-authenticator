@@ -9,6 +9,7 @@
         </iq:products>
 
         <iq:permissions>
+            <iq:uses-permission id="Communications"/>
         </iq:permissions>
 
         <iq:languages/>
