@@ -115,6 +115,8 @@ class AccountsMenuDelegate extends Ui.MenuInputDelegate {
     function onMenuItem(item) {
         if (item == :add_account) {
             Ui.pushView(new Ui.TextPicker("Name"), new AccountCreateDelegate(), Ui.SLIDE_LEFT);
+        } else if (item == :rename_account) {
+            Ui.pushView(new Ui.TextPicker(account.name), new AccountRenameDelegate(account), Ui.SLIDE_LEFT);
         } else if (item == :delete_account) {
             Ui.pushView(new Ui.Confirmation("Delete " + account.name + "?"), new AccountDeletionConfirmationDelegate(account), Ui.SLIDE_IMMEDIATE);
         }
@@ -166,6 +168,20 @@ class AccountAddConfirmationDelegate extends Ui.ConfirmationDelegate {
 class AccountCreateDelegate extends Ui.TextPickerDelegate {
     function onTextEntered(text) {
         Ui.pushView(new CodeDisclaimerView(), new CodeDisclaimerDelegate(text), Ui.SLIDE_LEFT);
+    }
+}
+
+class AccountRenameDelegate extends Ui.TextPickerDelegate {
+    hidden var account;
+
+    function initialize(newAccount) {
+        account = newAccount;
+    }
+
+    function onTextEntered(text) {
+        App.getApp().renameCurrentAccount(account.name, text);
+        var account = App.getApp().getAccount();
+        Ui.switchToView(new AccountView(account), new AccountDelegate(account), Ui.SLIDE_IMMEDIATE);
     }
 }
 
@@ -280,13 +296,16 @@ class AuthenticatorApp extends App.AppBase {
     function saveAccount(account) {
         var id = findByName(accounts, account.name);
         var repr = {"name" => account.name, "secrete" => account.key};
-        if (id == -1) {
-            accounts = Crypto.concatArrays(accounts, [ repr ]);
-            currentAccount = accounts.size() - 1;
-        } else {
-            accounts[i] = repr;
-        }
+        accounts = Crypto.concatArrays(accounts, [ repr ]);
+        currentAccount = accounts.size() - 1;
         updateAccounts(accounts);
+    }
+
+    function renameCurrentAccount(oldName, newName) {
+        if (accounts[currentAccount]["name"] == oldName) {
+            accounts[currentAccount]["name"] = newName;
+            updateAccounts(accounts);
+        }
     }
 
     function findByName(accounts, name) {
