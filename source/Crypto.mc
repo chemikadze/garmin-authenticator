@@ -1,5 +1,19 @@
 module Crypto {
 
+
+    var instrument = 0;
+
+    function resetPerf() {
+        Toybox.System.println("perf reset");
+        instrument = Toybox.System.getTimer();
+    }
+
+    function printPerf(label) {
+        var counter = Toybox.System.getTimer() - instrument;
+        Toybox.System.println("perf " + label + " " + counter);
+        instrument = Toybox.System.getTimer();
+    }
+
     class InvalidDataFormatException extends Toybox.Lang.Exception {
     }
 
@@ -104,10 +118,6 @@ module Crypto {
         return data[(index / 4).toNumber()] >> (index % 4 * 8) % 256;
     }
 
-    function clshift(x, n) {
-        return ((x << n) & mask32bit) | (x >> (32 - n));
-    }
-
     function padOne(wordBlock, position) {
         var wordId = position / 4;
         var offset = 3 - position % 4;
@@ -139,6 +149,7 @@ module Crypto {
         var lastBlock = blockCount - 1;
         var penultBlock = blockCount - 2;
         var messageLength = data.size() * 8l;
+
         // for each 16-word (64-byte, 512-bit) block
         for (var i = 0; i < blockCount; ++i) {
             // a)
@@ -176,27 +187,28 @@ module Crypto {
             A = H0; B = H1; C = H2; D = H3; E = H4;
             // d)
             var K = 0x5A827999l;
+            var F = 0;
             for (var t = 0; t <= 19; ++t) {
-                var F = (B & C) | ((~B) & D);
-                TEMP = (((A << 5) & mask32bit) | (A >> 27) + F + E + W[t] + K) & mask32bit;
+                F = (D ^ (B & (C ^ D))); // (B & C) | ((~B) & D);
+                TEMP = ((A << 5) | (A >> 27) + F + E + W[t] + K) & mask32bit;
                 E = D; D = C; C = ((B << 30) & mask32bit) | (B >> 2); B = A; A = TEMP;
             }
             K = 0x6ED9EBA1l;
             for (var t = 20; t <= 39; ++t) {
-                var F = B ^ C ^ D;
-                TEMP = (((A << 5) & mask32bit) | (A >> 27) + F + E + W[t] + K) & mask32bit;
+                F = B ^ C ^ D;
+                TEMP = ((A << 5) | (A >> 27) + F + E + W[t] + K) & mask32bit;
                 E = D; D = C; C = ((B << 30) & mask32bit) | (B >> 2); B = A; A = TEMP;
             }
             K = 0x8F1BBCDCl;
             for (var t = 40; t <= 59; ++t) {
-                var F = (B & C) | (B & D) | (C & D);
-                TEMP = (((A << 5) & mask32bit) | (A >> 27) + F + E + W[t] + K) & mask32bit;
+                F = ((B & C) | (D & (B | C))); // (B & C) | (B & D) | (C & D);
+                TEMP = ((A << 5) | (A >> 27) + F + E + W[t] + K) & mask32bit;
                 E = D; D = C; C = ((B << 30) & mask32bit) | (B >> 2); B = A; A = TEMP;
             }
             K = 0xCA62C1D6l;
             for (var t = 60; t <= 79; ++t) {
-                var F = B ^ C ^ D;
-                TEMP = (((A << 5) & mask32bit) | (A >> 27) + F + E + W[t] + K) & mask32bit;
+                F = B ^ C ^ D;
+                TEMP = ((A << 5) | (A >> 27) + F + E + W[t] + K) & mask32bit;
                 E = D; D = C; C = ((B << 30) & mask32bit) | (B >> 2); B = A; A = TEMP;
             }
             // e)
