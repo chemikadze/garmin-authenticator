@@ -3,6 +3,7 @@ using Toybox.Graphics;
 using Toybox.WatchUi as Ui;
 using Toybox.Time;
 using Toybox.Communications;
+using Toybox.System as Sys;
 
 class EmptyAuthenticatorView extends Ui.View {
 
@@ -113,13 +114,22 @@ class AccountsMenuDelegate extends Ui.MenuInputDelegate {
     }
 
     function onMenuItem(item) {
-        if (item == :add_account) {
-            Ui.pushView(new Ui.TextPicker("Name"), new AccountCreateDelegate(), Ui.SLIDE_LEFT);
-        } else if (item == :rename_account) {
-            Ui.pushView(new Ui.TextPicker(account.name), new AccountRenameDelegate(account), Ui.SLIDE_LEFT);
-        } else if (item == :delete_account) {
-            Ui.pushView(new Ui.Confirmation("Delete " + account.name + "?"), new AccountDeletionConfirmationDelegate(account), Ui.SLIDE_IMMEDIATE);
+        if (Ui has :TextPicker) {
+            if (item == :add_account) {
+                Ui.pushView(new Ui.TextPicker("Name"),
+                    new AccountCreateDelegate(), Ui.SLIDE_LEFT);
+            } else if (item == :rename_account) {
+                Ui.pushView(new Ui.TextPicker(account.name), new AccountRenameDelegate(account), Ui.SLIDE_LEFT);
+            } else if (item == :delete_account) {
+                Ui.pushView(new Ui.Confirmation("Delete " + account.name + "?"), new AccountDeletionConfirmationDelegate(account), Ui.SLIDE_IMMEDIATE);
+            }
+        } else {
+            // Vivoactive 3 has no support for TextPicker
+             var picker = new StringPicker();
+             Ui.pushView(picker, new AccountCreateFromPickerDelegate(picker), Ui.SLIDE_IMMEDIATE);
         }
+
+
     }
 }
 
@@ -166,8 +176,51 @@ class AccountAddConfirmationDelegate extends Ui.ConfirmationDelegate {
 }
 
 class AccountCreateDelegate extends Ui.TextPickerDelegate {
-    function onTextEntered(text) {
+    function onTextEntered(text, changed) {
         Ui.pushView(new CodeDisclaimerView(), new CodeDisclaimerDelegate(text), Ui.SLIDE_LEFT);
+    }
+}
+
+class AccountCreateFromPickerDelegate extends Ui.PickerDelegate {
+    hidden var mPicker;
+
+    function initialize(picker) {
+        PickerDelegate.initialize();
+        mPicker = picker;
+    }
+
+    function onCancel() {
+        if(0 == mPicker.getTitleLength()) {
+            Ui.popView(Ui.SLIDE_IMMEDIATE);
+        }
+        else {
+            mPicker.removeCharacter();
+        }
+    }
+
+    function onAccept(values) {
+        if(!mPicker.isDone(values[0])) {
+            mPicker.addCharacter(values[0]);
+        }
+        else {
+
+            if(mPicker.getTitle().length() == 0) {
+                App.getApp().deleteProperty("string");
+            }
+            else {
+                var text = mPicker.getTitle();
+                 System.println("Data " + text);
+
+                App.getApp().setProperty("string", text);
+
+                Ui.popView(Ui.SLIDE_IMMEDIATE);
+
+                Ui.pushView(new CodeDisclaimerView(),
+                    new CodeDisclaimerDelegate(text),
+                    Ui.SLIDE_LEFT);
+            }
+
+        }
     }
 }
 
@@ -211,9 +264,19 @@ class CodeDisclaimerDelegate extends Ui.BehaviorDelegate {
     }
 
     function onKey(key) {
-        if ((key.getKey() == Ui.KEY_ENTER) and (key.getType() == Ui.PRESS_TYPE_ACTION)) {
-            Ui.pushView(new Ui.TextPicker("Code"), new AccountSetCodeDelegate(name, ""), Ui.SLIDE_LEFT);
+        if (Ui has :TextPicker) {
+            if ((key.getKey() == Ui.KEY_ENTER) and (key.getType() == Ui.PRESS_TYPE_ACTION)) {
+                Ui.pushView(new Ui.TextPicker("Code"),
+                new AccountSetCodeDelegate(name, ""), Ui.SLIDE_LEFT);
+            }
         }
+        else {
+            var picker = new StringPicker();
+
+            Ui.pushView(picker, new AccountSetCodeFromPickerDelegate(picker, name, ""), Ui.SLIDE_LEFT);
+        }
+
+
     }
 }
 
@@ -233,6 +296,53 @@ class AccountSetCodeDelegate extends Ui.TextPickerDelegate {
             Ui.switchToView(new AccountView(account), new AccountDelegate(account), Ui.SLIDE_IMMEDIATE);
         }
     }
+}
+
+class AccountSetCodeFromPickerDelegate extends Ui.PickerDelegate {
+    hidden var mPicker;
+    var name, code;
+
+    function initialize(picker, newName, codeAcc) {
+        PickerDelegate.initialize();
+        mPicker = picker;
+
+        name = newName;
+        code = codeAcc;
+    }
+
+    function onCancel() {
+        if(0 == mPicker.getTitleLength()) {
+            Ui.popView(Ui.SLIDE_IMMEDIATE);
+        }
+        else {
+            mPicker.removeCharacter();
+        }
+    }
+
+    function onAccept(values) {
+        if(!mPicker.isDone(values[0])) {
+            mPicker.addCharacter(values[0]);
+        }
+        else {
+
+            if(mPicker.getTitle().length() == 0) {
+                App.getApp().deleteProperty("string");
+            }
+            else {
+                var text = mPicker.getTitle();
+                System.println("Data " + text);
+
+                App.getApp().setProperty("string", text);
+
+                 var account = new AccountInfo(name, code + text);
+                 App.getApp().saveAccount(account);
+                 Ui.switchToView(new AccountView(account),
+                    new AccountDelegate(account), Ui.SLIDE_IMMEDIATE);
+            }
+
+        }
+    }
+
 }
 
 class AccountInfo {
@@ -259,7 +369,7 @@ class AccountInfo {
 class AuthenticatorApp extends App.AppBase {
 
     //! onStart() is called on application start up
-    function onStart() {
+    function onStart(state) {
     }
 
     function mailboxListener(iterator) {
@@ -275,7 +385,7 @@ class AuthenticatorApp extends App.AppBase {
     }
 
     //! onStop() is called when your application is exiting
-    function onStop() {
+    function onStop(state) {
     }
 
     var accounts = [];
