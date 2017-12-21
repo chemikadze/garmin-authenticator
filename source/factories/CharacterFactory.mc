@@ -1,3 +1,12 @@
+// This code was taken from the Picker sample in the
+// Garmin's SDK. The SDK sample license, as stated in
+// the SDK version 2.4.1 applies:
+//
+// Copyright 2015-2016 by Garmin Ltd. or its subsidiaries.
+// Subject to Garmin SDK License Agreement and Wearables
+// Application Developer Agreement.
+//
+
 using Toybox.Graphics as Gfx;
 using Toybox.WatchUi as Ui;
 
