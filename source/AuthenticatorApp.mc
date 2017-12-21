@@ -124,8 +124,16 @@ class AccountsMenuDelegate extends Ui.MenuInputDelegate {
                 Ui.pushView(new Ui.Confirmation("Delete " + account.name + "?"), new AccountDeletionConfirmationDelegate(account), Ui.SLIDE_IMMEDIATE);
             }
         } else {
+            if (item == :add_account) {
+                System.println("Add account");
+            } else if (item == :rename_account) {
+                System.println("Rename account");
+            } else if (item == :delete_account) {
+                System.println("Delete account");
+            }
+
             // Vivoactive 3 has no support for TextPicker
-             var picker = new StringPicker();
+             var picker = new StringPicker(Rez.Strings.accountNamePickerTitle, "account");
              Ui.pushView(picker, new AccountCreateFromPickerDelegate(picker), Ui.SLIDE_IMMEDIATE);
         }
 
@@ -205,13 +213,13 @@ class AccountCreateFromPickerDelegate extends Ui.PickerDelegate {
         else {
 
             if(mPicker.getTitle().length() == 0) {
-                App.getApp().deleteProperty("string");
+                App.getApp().deleteProperty("account");
             }
             else {
                 var text = mPicker.getTitle();
                  System.println("Data " + text);
 
-                App.getApp().setProperty("string", text);
+                App.getApp().setProperty("account", text);
 
                 Ui.popView(Ui.SLIDE_IMMEDIATE);
 
@@ -271,7 +279,7 @@ class CodeDisclaimerDelegate extends Ui.BehaviorDelegate {
             }
         }
         else {
-            var picker = new StringPicker();
+            var picker = new StringPicker(Rez.Strings.codePickerTitle, "code");
 
             Ui.pushView(picker, new AccountSetCodeFromPickerDelegate(picker, name, ""), Ui.SLIDE_LEFT);
         }
@@ -326,13 +334,13 @@ class AccountSetCodeFromPickerDelegate extends Ui.PickerDelegate {
         else {
 
             if(mPicker.getTitle().length() == 0) {
-                App.getApp().deleteProperty("string");
+                App.getApp().deleteProperty("code");
             }
             else {
                 var text = mPicker.getTitle();
-                System.println("Data " + text);
+                System.println("Code " + text);
 
-                App.getApp().setProperty("string", text);
+                App.getApp().setProperty("code", text);
 
                  var account = new AccountInfo(name, code + text);
                  App.getApp().saveAccount(account);

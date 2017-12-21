@@ -7,22 +7,24 @@
 // Application Developer Agreement.
 //
 
+
 using Toybox.Application as App;
 using Toybox.Graphics as Gfx;
 using Toybox.WatchUi as Ui;
 
 class StringPicker extends Ui.Picker {
-    const mCharacterSet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const mCharacterSet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     hidden var mTitleText;
     hidden var mFactory;
 
-    function initialize() {
+
+    function initialize(defaultTitleText, propertyName) {
         mFactory = new CharacterFactory(mCharacterSet, {:addOk=>true});
         mTitleText = "";
 
-        var string = App.getApp().getProperty("string");
+        var string = App.getApp().getProperty(propertyName);
         var defaults = null;
-        var titleText = Rez.Strings.accountNamePickerTitle;
+        var titleText = defaultTitleText;
 
         if(string != null) {
             mTitleText = string;
