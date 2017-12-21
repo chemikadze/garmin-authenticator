@@ -110,6 +110,7 @@ class AccountsMenuDelegate extends Ui.MenuInputDelegate {
     hidden var account;
 
     function initialize(newAccount) {
+        MenuInputDelegate.initialize();
         account = newAccount;
     }
 
@@ -124,20 +125,16 @@ class AccountsMenuDelegate extends Ui.MenuInputDelegate {
                 Ui.pushView(new Ui.Confirmation("Delete " + account.name + "?"), new AccountDeletionConfirmationDelegate(account), Ui.SLIDE_IMMEDIATE);
             }
         } else {
-            if (item == :add_account) {
-                System.println("Add account");
-            } else if (item == :rename_account) {
-                System.println("Rename account");
+            // Vivoactive 3 has no support for TextPicker
+            if (item == :add_account || item == :rename_account) {
+                var picker = new StringPicker(Rez.Strings.accountNamePickerTitle, "account");
+                Ui.pushView(picker, new AccountCreateFromPickerDelegate(picker), Ui.SLIDE_IMMEDIATE);
             } else if (item == :delete_account) {
                 System.println("Delete account");
+
+                Ui.pushView(new Ui.Confirmation("Delete " + account.name + "?"), new AccountDeletionConfirmationDelegate(account), Ui.SLIDE_IMMEDIATE);
             }
-
-            // Vivoactive 3 has no support for TextPicker
-             var picker = new StringPicker(Rez.Strings.accountNamePickerTitle, "account");
-             Ui.pushView(picker, new AccountCreateFromPickerDelegate(picker), Ui.SLIDE_IMMEDIATE);
         }
-
-
     }
 }
 
@@ -217,7 +214,7 @@ class AccountCreateFromPickerDelegate extends Ui.PickerDelegate {
             }
             else {
                 var text = mPicker.getTitle();
-                 System.println("Data " + text);
+                System.println("Data " + text);
 
                 App.getApp().setProperty("account", text);
 
