@@ -115,8 +115,28 @@ class AccountDelegate extends Ui.BehaviorDelegate {
             var account = App.getApp().getNextAccount();
             Ui.switchToView(new AccountView(account), new AccountDelegate(account), Ui.SLIDE_IMMEDIATE);
         }
+
+        return true;
     }
 
+    function onSwipe(evt) {
+        var swipe = evt.getDirection();
+
+        if (swipe == SWIPE_LEFT or swipe == SWIPE_RIGHT) {
+
+            var nextAccount = App.getApp().getNextAccount();
+            Ui.switchToView(new AccountView(nextAccount), new AccountDelegate(nextAccount), Ui.SLIDE_IMMEDIATE);
+        }
+
+        return true;
+    }
+
+    function onTap(evt) {
+        var currentAccount = App.getApp().getCurrentAccount();
+        currentAccount.generateToken();
+        Ui.switchToView(new AccountView(currentAccount), new AccountDelegate(currentAccount), Ui.SLIDE_IMMEDIATE);
+        return true;
+    }
 }
 
 class AccountsMenuDelegate extends Ui.MenuInputDelegate {
@@ -143,8 +163,6 @@ class AccountsMenuDelegate extends Ui.MenuInputDelegate {
                 var picker = new StringPicker(Rez.Strings.accountNamePickerTitle, "account");
                 Ui.pushView(picker, new AccountCreateFromPickerDelegate(picker), Ui.SLIDE_IMMEDIATE);
             } else if (item == :delete_account) {
-                System.println("Delete account");
-
                 Ui.pushView(new Ui.Confirmation("Delete " + account.name + "?"),
                     new AccountDeletionConfirmationDelegate(account), Ui.SLIDE_IMMEDIATE);
             }
@@ -163,7 +181,6 @@ class AccountDeletionConfirmationDelegate extends Ui.ConfirmationDelegate {
 
     function onResponse(confirmation) {
         if (confirmation == Ui.CONFIRM_YES) {
-            System.println("Removing account: " + App.getApp().getCurrentAccount().name);
             App.getApp().deleteAccount(App.getApp().getCurrentAccount().name);
             var account = App.getApp().getCurrentAccount();
             if (account != null) {
@@ -238,7 +255,6 @@ class AccountCreateFromPickerDelegate extends Ui.PickerDelegate {
             }
             else {
                 var text = mPicker.getTitle();
-                System.println("Data " + text);
 
                 App.getApp().setProperty("account", text);
 
@@ -369,8 +385,6 @@ class AccountSetCodeFromPickerDelegate extends Ui.PickerDelegate {
             }
             else {
                 var text = mPicker.getTitle();
-                System.println("Code " + text);
-
                 App.getApp().setProperty("code", text);
 
                  var account = new AccountInfo(name, code + text);
@@ -504,8 +518,8 @@ class AuthenticatorApp extends App.AppBase {
     }
 
     function getAccount(id) {
-        System.println("Looking for account");
-        System.println("Looking for account => " + id);
+//        System.println("Looking for account");
+//        System.println("Looking for account => " + id);
 
         if (id == null) {
             id = currentAccount;
