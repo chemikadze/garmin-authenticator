@@ -15,6 +15,9 @@ module Crypto {
     }
 
     class InvalidDataFormatException extends Toybox.Lang.Exception {
+        function initialize() {
+            Toybox.Lang.Exception.initialize();
+        }
     }
 
     //------------------------------------------------------------------------

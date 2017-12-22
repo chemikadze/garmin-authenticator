@@ -7,6 +7,10 @@ using Toybox.System as Sys;
 
 class EmptyAuthenticatorView extends Ui.View {
 
+    function initialize() {
+        Ui.View.initialize();
+    }
+
     function onLayout(dc) {
         setLayout(Rez.Layouts.EmptyLayout(dc));
     }
@@ -24,6 +28,11 @@ class EmptyAuthenticatorView extends Ui.View {
 }
 
 class EmptyAuthenticatorDelegate extends Ui.BehaviorDelegate {
+
+    function initialize() {
+        Ui.BehaviorDelegate.initialize();
+    }
+
     function onMenu() {
         var menu = new Rez.Menus.EmptyMenu();
         Ui.pushView(menu, new AccountsMenuDelegate(null), Ui.SLIDE_RIGHT);
@@ -37,6 +46,8 @@ class AccountView extends Ui.View {
     var timer;
 
     function initialize(newAccount) {
+        Ui.View.initialize();
+
         account = newAccount;
         timer = new Toybox.Timer.Timer();
     }
@@ -88,6 +99,8 @@ class AccountDelegate extends Ui.BehaviorDelegate {
     hidden var account;
 
     function initialize(newAccount) {
+        Ui.BehaviorDelegate.initialize();
+
         account = newAccount;
     }
 
@@ -132,7 +145,8 @@ class AccountsMenuDelegate extends Ui.MenuInputDelegate {
             } else if (item == :delete_account) {
                 System.println("Delete account");
 
-                Ui.pushView(new Ui.Confirmation("Delete " + account.name + "?"), new AccountDeletionConfirmationDelegate(account), Ui.SLIDE_IMMEDIATE);
+                Ui.pushView(new Ui.Confirmation("Delete " + account.name + "?"),
+                    new AccountDeletionConfirmationDelegate(account), Ui.SLIDE_IMMEDIATE);
             }
         }
     }
@@ -142,13 +156,16 @@ class AccountDeletionConfirmationDelegate extends Ui.ConfirmationDelegate {
     hidden var account;
 
     function initialize(newAccount) {
+        Ui.ConfirmationDelegate.initialize();
+
         account = newAccount;
     }
 
     function onResponse(confirmation) {
         if (confirmation == Ui.CONFIRM_YES) {
-            App.getApp().deleteAccount(App.getApp().getAccount().name);
-            var account = App.getApp().getAccount();
+            System.println("Removing account: " + App.getApp().getCurrentAccount().name);
+            App.getApp().deleteAccount(App.getApp().getCurrentAccount().name);
+            var account = App.getApp().getCurrentAccount();
             if (account != null) {
                 Ui.switchToView(new AccountView(account), new AccountDelegate(account), Ui.SLIDE_IMMEDIATE);
             } else {
@@ -165,6 +182,8 @@ class AccountAddConfirmationDelegate extends Ui.ConfirmationDelegate {
     hidden var account;
 
     function initialize(newAccount) {
+        Ui.ConfirmationDelegate.initialize();
+
         account = newAccount;
     }
 
@@ -173,7 +192,7 @@ class AccountAddConfirmationDelegate extends Ui.ConfirmationDelegate {
             App.getApp().saveAccount(account);
             Ui.switchToView(new AccountView(account), new AccountDelegate(account), Ui.SLIDE_IMMEDIATE);
         } else {
-            var account = App.getApp().getAccount();
+            var account = App.getApp().getCurrentAccount();
             Ui.switchToView(new AccountView(account), new AccountDelegate(account), Ui.SLIDE_IMMEDIATE);
         }
 
@@ -181,6 +200,10 @@ class AccountAddConfirmationDelegate extends Ui.ConfirmationDelegate {
 }
 
 class AccountCreateDelegate extends Ui.TextPickerDelegate {
+    function initialize() {
+        Ui.TextPickerDelegate.initialize();
+    }
+
     function onTextEntered(text, changed) {
         Ui.pushView(new CodeDisclaimerView(), new CodeDisclaimerDelegate(text), Ui.SLIDE_LEFT);
     }
@@ -191,6 +214,7 @@ class AccountCreateFromPickerDelegate extends Ui.PickerDelegate {
 
     function initialize(picker) {
         PickerDelegate.initialize();
+
         mPicker = picker;
     }
 
@@ -233,17 +257,22 @@ class AccountRenameDelegate extends Ui.TextPickerDelegate {
     hidden var account;
 
     function initialize(newAccount) {
+        Ui.TextPickerDelegate.initialize();
+
         account = newAccount;
     }
 
     function onTextEntered(text) {
         App.getApp().renameCurrentAccount(account.name, text);
-        var account = App.getApp().getAccount();
+        var account = App.getApp().getCurrentAccount();
         Ui.switchToView(new AccountView(account), new AccountDelegate(account), Ui.SLIDE_IMMEDIATE);
     }
 }
 
 class CodeDisclaimerView extends Ui.View {
+    function initialize() {
+        Ui.View.initialize();
+    }
 
     function onLayout(dc) {
         setLayout(Rez.Layouts.CodeDisclaimerLayout(dc));
@@ -265,6 +294,8 @@ class CodeDisclaimerDelegate extends Ui.BehaviorDelegate {
     var name;
 
     function initialize(newName) {
+        Ui.BehaviorDelegate.initialize();
+
         name = newName;
     }
 
@@ -287,7 +318,10 @@ class CodeDisclaimerDelegate extends Ui.BehaviorDelegate {
 
 class AccountSetCodeDelegate extends Ui.TextPickerDelegate {
     var name, code;
+
     function initialize(newName, codeAcc) {
+        Ui.TextPickerDelegate.initialize();
+
         name = newName;
         code = codeAcc;
     }
@@ -372,6 +406,10 @@ class AccountInfo {
 
 
 class AuthenticatorApp extends App.AppBase {
+    function initialize() {
+        App.AppBase.initialize();
+    }
+
 
     //! onStart() is called on application start up
     function onStart(state) {
@@ -466,6 +504,9 @@ class AuthenticatorApp extends App.AppBase {
     }
 
     function getAccount(id) {
+        System.println("Looking for account");
+        System.println("Looking for account => " + id);
+
         if (id == null) {
             id = currentAccount;
         }
@@ -476,6 +517,12 @@ class AuthenticatorApp extends App.AppBase {
         var account = new AccountInfo(accountData["name"], accountData["secrete"]);
         return account;
     }
+
+    function getCurrentAccount() {
+        return getAccount(null);
+    }
+
+
 
     hidden function orElse(a, b) {
         if (a == null) {
