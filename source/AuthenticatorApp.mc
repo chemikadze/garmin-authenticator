@@ -427,6 +427,7 @@ class AuthenticatorApp extends App.AppBase {
 
     //! onStart() is called on application start up
     function onStart(state) {
+            loadProperties();
     }
 
     function mailboxListener(iterator) {
@@ -449,7 +450,7 @@ class AuthenticatorApp extends App.AppBase {
 
     //! Return the initial view of your application here
     function getInitialView() {
-        loadProperties();
+
         accounts = orElse(getProperty("accounts"), []); // TODO multi-account
         Communications.setMailboxListener(method(:mailboxListener));
         if (accounts.size() == 0) {
