@@ -13,7 +13,7 @@ using Toybox.Graphics as Gfx;
 using Toybox.WatchUi as Ui;
 
 class StringPicker extends Ui.Picker {
-    const mCharacterSet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    const mCharacterSet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     hidden var mTitleText;
     hidden var mFactory;
 
@@ -32,7 +32,11 @@ class StringPicker extends Ui.Picker {
             defaults = [mFactory.getIndex(string.substring(string.length()-1, string.length()))];
         }
 
-        mTitle = new Ui.Text({:text=>titleText, :locX =>Ui.LAYOUT_HALIGN_CENTER, :locY=>Ui.LAYOUT_VALIGN_BOTTOM, :color=>Gfx.COLOR_WHITE});
+        mTitle = new Ui.Text({
+                :text=>titleText,
+                :locX =>Ui.LAYOUT_HALIGN_CENTER,
+                :locY=>Ui.LAYOUT_VALIGN_BOTTOM,
+                :color=>Gfx.COLOR_WHITE});
 
         Picker.initialize({:title=>mTitle, :pattern=>[mFactory], :defaults=>defaults});
     }
