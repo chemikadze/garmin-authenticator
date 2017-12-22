@@ -1,3 +1,3 @@
 <menu id="EmptyMenu">
-    <menu-item id="add_account">Add account</menu-item>
+    <menu-item id="add_account" label="Add account">Add account</menu-item>
 </menu>

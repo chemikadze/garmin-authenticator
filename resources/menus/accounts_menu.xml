@@ -1,6 +1,6 @@
 <menu id="AccountsMenu">
-    <menu-item id="add_account">Add account</menu-item>    
-    <menu-item id="rename_account">Rename account</menu-item>
-    <menu-item id="delete_account">Delete account</menu-item>
+    <menu-item id="add_account" label="Add account">Add account</menu-item>
+    <menu-item id="rename_account" label="Rename account">Rename account</menu-item>
+    <menu-item id="delete_account" label="Delete account">Delete account</menu-item>
 
 </menu>
